@@ -22,7 +22,7 @@ var extra = {
         }
     },
     source: function() {
-        window.open('https://github.com/foolmoron/stripes', '_blank')
+        window.open('https://github.com/foolmoron/focusing', '_blank')
     },
 }
 
