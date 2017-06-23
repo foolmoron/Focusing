@@ -47,6 +47,18 @@
         #define TAU 6.283185307179586476925286766559
 
         uniform float time;
+        uniform float subdivisions;
+        uniform float zoomFrequency;
+        uniform float floorRate;
+        uniform float cutoffFrequency;
+        uniform float cutoffTimeScale;
+        uniform float cutoffMultiplier;
+        uniform float colorFadeAmplitude;
+        uniform float colorFadeFrequency;
+        uniform float hueShiftFrequency;
+        uniform float saturationNoise;
+        uniform float saturationFloor;
+        uniform float valueFloor;
 
         varying vec2 vUv;
 
@@ -64,13 +76,9 @@
             return vec2(0.5 + (cos(rot) * (p.x - 0.5)) - (sin(rot) * (p.y - 0.5)), 0.5 + (sin(rot) * (p.x - 0.5)) + (cos(rot) * (p.y - 0.5)));
         }
 
-        float getVal(vec2 uv, float r) {
-            return cos(r)*uv.x + sin(r)*uv.y;
-        }
-
         void main() {
-            float r = TAU / 8. + time * length(vUv - vec2(0.5, 0.5)) * mix(1., -1., sin(time*1.)/2.+1.);
-            float floorness = ceil(abs((r / 5.)));
+            float r = TAU / subdivisions + time * length(vUv - vec2(0.5, 0.5)) * mix(1., -1., sin(time * zoomFrequency)/2.+1.);
+            float floorness = ceil(abs((r / floorRate)));
             r = floor(r * floorness) / floorness;
             vec2 uv = rotateAroundCenter(vUv, r);
             if (uv.x > 0.5 && uv.y > 0.5) {
@@ -82,11 +90,11 @@
             } else if (uv.x > 0.5 && uv.y <= 0.5) {
                 uv = vec2(-uv.y, uv.x);
             }
-            float cutoff = sin(uv.y * 10. + time);
+            float cutoff = sin(uv.y * cutoffFrequency + time * cutoffTimeScale);
             float val = uv.y;
-            float blackness = sin(val * 97.) > cutoff ? 1. : 0.8*(sin(time*2.)/2.+1.);
+            float blackness = sin(val * cutoffMultiplier) > cutoff ? 1. : colorFadeAmplitude * (sin(time * colorFadeFrequency)/2.+1.);
             vec4 finalColor = vec4(blackness, blackness, blackness, 1);
-            vec3 hsvColor = hsv2rgb(vec3(length(uv) + sin(time*1.), 0.5*rand(uv + vec2(time, time))+0.5, 1));
+            vec3 hsvColor = hsv2rgb(vec3(length(uv) + sin(time * hueShiftFrequency), saturationNoise * rand(uv + vec2(time, time)) + saturationFloor, valueFloor));
             finalColor = vec4(finalColor.r * hsvColor.r, finalColor.g * hsvColor.g, finalColor.b * hsvColor.b, 1);
             gl_FragColor = finalColor;
         }

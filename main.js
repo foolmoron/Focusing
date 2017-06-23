@@ -100,23 +100,28 @@ quadGeometry.faceVertexUvs[0].push([new THREE.Vector2(0, 0), new THREE.Vector2(1
 quadGeometry.uvsNeedUpdate = true
 
 var uniforms = {
-    tex: { type: 't', value: tex.wall },
     time: { type: 'f', value: 30 },
-    rotation: { type: 'f', value: 0 },
 
-    period: { type: 'f', value: 4 },
-    offset: { type: 'f', value: 0.1 },
-    amplitude: { type: 'f', value: 0.2 },
-    morphphase: { type: 'f', value: 0 },
-    colorphase: { type: 'f', value: 0 },
+    subdivisions: { type: 'f', value: 8 },
+    zoomFrequency: { type: 'f', value: 1 },
+    floorRate: { type: 'f', value: 5 },
+
+    cutoffFrequency: { type: 'f', value: 24 },
+    cutoffTimeScale: { type: 'f', value: 1 },
+    cutoffMultiplier: { type: 'f', value: 97 },
+
+    colorFadeAmplitude: { type: 'f', value: 0 },
+    colorFadeFrequency: { type: 'f', value: 2 },
+
+    hueShiftFrequency: { type: 'f', value: 1 },
+    saturationNoise: { type: 'f', value: 0.35 },
+    saturationFloor: { type: 'f', value: 0.65 },
+    valueFloor: { type: 'f', value: 1 },
 }
 var prevUniforms = {} // for diffing
 
 var uniformsExtras = {
-    texName: 'wall',
     advanceTime: true,
-    morphphaseVelocity: 0.1,
-    colorphaseVelocity: 1,
 }
 
 var quad = new THREE.Mesh(quadGeometry, new THREE.ShaderMaterial({
@@ -134,14 +139,12 @@ scene.add(quad)
 function render() {
     var dt = clock.getDelta()
 
-    uniforms.tex.value = tex[uniformsExtras.texName]
-    uniforms.time.value += (uniformsExtras.advanceTime) ? dt : 0
-    uniforms.colorphase.value = (uniforms.colorphase.value + dt * uniformsExtras.colorphaseVelocity + 2*Math.PI) % (2*Math.PI)
+    if (uniformsExtras.advanceTime) {
+        uniforms.time.value += dt
+    }
     if (isFullscreen && latestDeviceRotation != null) {
-        uniforms.morphphase.value = latestDeviceRotation
         camera.rotation.z = -latestDeviceRotation
     } else {
-        uniforms.morphphase.value = (uniforms.morphphase.value + dt * uniformsExtras.morphphaseVelocity + 2*Math.PI) % (2*Math.PI)
     }
 
     // check uniform diffs
@@ -171,59 +174,82 @@ function initGUI() {
     gui.add(extra, 'source')
         .name('Source code by @foolmoron')
     
-    var fProps = gui.addFolder('Pulsation')
-    fProps.open()
-    fProps.add(uniformsExtras, 'texName', { Wall: 'wall', Psych: 'psych', Grid: 'grid' })
-        .name('Texture')
-    fProps.add(uniformsExtras, 'advanceTime')
+    var fGen = gui.addFolder('General')
+    fGen.open()
+    fGen.add(uniformsExtras, 'advanceTime')
         .name('Advance Time')
-    fProps.add(uniforms.time, 'value')
+    fGen.add(uniforms.time, 'value')
         .name('Time')
         .min(0)
         .step(0.1)
-        .listen()
-    fProps.add(uniforms.period, 'value')
-        .name('Period')
+    fGen.add(uniforms.subdivisions, 'value')
+        .name('Subdivisions')
+        .min(1)
+        .max(16)
+        .step(2)
+    fGen.add(uniforms.zoomFrequency, 'value')
+        .name('Zoom Frequency')
+        .min(0)
+        .max(5)
+        .step(0.01)
+    fGen.add(uniforms.floorRate, 'value')
+        .name('Floor Rate')
+        .min(1)
+        .max(15)
+        .step(1)
+
+    var fCutoff = gui.addFolder('Cutoff')
+    fCutoff.open()
+    fCutoff.add(uniforms.cutoffFrequency, 'value')
+        .name('Frequency')
+        .min(0)
+        .max(50)
+        .step(0.1)
+    fCutoff.add(uniforms.cutoffTimeScale, 'value')
+        .name('Timescale')
+        .min(-4)
+        .max(4)
+        .step(0.1)
+    fCutoff.add(uniforms.cutoffMultiplier, 'value')
+        .name('Multiplier')
+        .min(0)
+        .max(200)
+        .step(1)
+
+    var fColorFade = gui.addFolder('Color Fade')
+    fColorFade.open()
+    fColorFade.add(uniforms.colorFadeAmplitude, 'value')
+        .name('Amplitude')
+        .min(0)
+        .max(3)
+        .step(0.1)
+    fColorFade.add(uniforms.colorFadeFrequency, 'value')
+        .name('Frequency')
         .min(0)
         .max(10)
-        .step(0.01)
-    fProps.add(uniforms.amplitude, 'value')
-        .name('Amplitude')
+        .step(0.1)
+
+    var fColorFade = gui.addFolder('Colors')
+    fColorFade.open()
+    fColorFade.add(uniforms.hueShiftFrequency, 'value')
+        .name('Hue Frequency')
+        .min(0)
+        .max(6)
+        .step(0.1)
+    fColorFade.add(uniforms.saturationNoise, 'value')
+        .name('Saturation Noise')
         .min(0)
         .max(1)
         .step(0.01)
-    fProps.add(uniforms.offset, 'value')
-        .name('Amplitude Offset')
-        .min(-0.4)
-        .max(0.4)
-        .step(0.01)
-
-    var fMorph = gui.addFolder('Morph')
-    fMorph.open()
-    fMorph.add(uniforms.morphphase, 'value')
-        .name('Phase')
+    fColorFade.add(uniforms.saturationFloor, 'value')
+        .name('Saturation Floor')
         .min(0)
-        .max(2*Math.PI)
+        .max(1)
         .step(0.01)
-        .listen()
-    fMorph.add(uniformsExtras, 'morphphaseVelocity')
-        .name('Velocity')
-        .min(-0.3*Math.PI)
-        .max(0.3*Math.PI)
-        .step(0.01)
-
-    var fColor = gui.addFolder('Color')
-    fColor.open()
-    fColor.add(uniforms.colorphase, 'value')
-        .name('Phase')
+    fColorFade.add(uniforms.valueFloor, 'value')
+        .name('Value Floor')
         .min(0)
-        .max(2*Math.PI)
-        .step(0.01)
-        .listen()
-    fColor.add(uniformsExtras, 'colorphaseVelocity')
-        .name('Velocity')
-        .min(-3*Math.PI)
-        .max(3*Math.PI)
+        .max(1)
         .step(0.01)
 
     gui.add(extra, 'fullscreen')
@@ -232,6 +258,6 @@ function initGUI() {
 
 // Init
 window.onload = function() {
-    //initGUI()
+    initGUI()
     render()
 }
