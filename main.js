@@ -116,6 +116,7 @@ var uniforms = {
     hueShiftFrequency: { type: 'f', value: 1 },
     saturationNoise: { type: 'f', value: 0.35 },
     saturationFloor: { type: 'f', value: 0.65 },
+    valueNoise: { type: 'f', value: 0 },
     valueFloor: { type: 'f', value: 1 },
 }
 var prevUniforms = {} // for diffing
@@ -234,8 +235,8 @@ function initGUI() {
     fColorFade.add(uniforms.hueShiftFrequency, 'value')
         .name('Hue Frequency')
         .min(0)
-        .max(6)
-        .step(0.1)
+        .max(2)
+        .step(0.01)
     fColorFade.add(uniforms.saturationNoise, 'value')
         .name('Saturation Noise')
         .min(0)
@@ -243,6 +244,11 @@ function initGUI() {
         .step(0.01)
     fColorFade.add(uniforms.saturationFloor, 'value')
         .name('Saturation Floor')
+        .min(0)
+        .max(1)
+        .step(0.01)
+    fColorFade.add(uniforms.valueNoise, 'value')
+        .name('Value Noise')
         .min(0)
         .max(1)
         .step(0.01)

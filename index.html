@@ -58,6 +58,7 @@
         uniform float hueShiftFrequency;
         uniform float saturationNoise;
         uniform float saturationFloor;
+        uniform float valueNoise;
         uniform float valueFloor;
 
         varying vec2 vUv;
@@ -94,7 +95,7 @@
             float val = uv.y;
             float blackness = sin(val * cutoffMultiplier) > cutoff ? 1. : colorFadeAmplitude * (sin(time * colorFadeFrequency)/2.+1.);
             vec4 finalColor = vec4(blackness, blackness, blackness, 1);
-            vec3 hsvColor = hsv2rgb(vec3(length(uv) + sin(time * hueShiftFrequency), saturationNoise * rand(uv + vec2(time, time)) + saturationFloor, valueFloor));
+            vec3 hsvColor = hsv2rgb(vec3(length(uv) + sin(time * hueShiftFrequency), saturationNoise * rand(uv + vec2(time, time)) + saturationFloor, valueNoise * rand(uv + 2. * vec2(time, time)) + valueFloor));
             finalColor = vec4(finalColor.r * hsvColor.r, finalColor.g * hsvColor.g, finalColor.b * hsvColor.b, 1);
             gl_FragColor = finalColor;
         }
